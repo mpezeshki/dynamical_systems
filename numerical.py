@@ -1,58 +1,40 @@
-from numpy import loadtxt
-# from pylab import figure, plot, xlabel, grid, hold, legend, title, savefig, show
-# from matplotlib.font_manager import FontProperties
+import matplotlib.pyplot as plt
 from scipy.integrate import odeint
+import numpy as np
+
+mu = 1.0
 
 
-def vectorfield(w, t, p):
-    u, v, x, y = w
-    a, b = p
+def solver(X, t, params):
+    x = X[0]
+    u = X[1]
+    y = X[2]
+    v = X[3]
+    a, b = params
 
-    f = [u,
-         - a * u - b * y,
-         v,
-         - a * v + b * x]
-    return f
+    dxdt = u
+    # dudt = -a * u - b * y
+    dudt = -a * u - b * (y - 2 * x)
+    dydt = v
+    # dvdt = -a * v + b * x
+    dvdt = -a * v + b * (x + 2 * y)
+    return [dxdt, dudt, dydt, dvdt]
 
-x = 0.5
-u = 0.0
-y = 0.5
-v = 0.0
-w0 = [x, u, y, v]
+X0 = [0.5, 0, 0.5, 0]
+t = np.linspace(0, 40, 500)
 
-abserr = 1.0e-8
-relerr = 1.0e-6
-stoptime = 10.0
-numpoints = 250
+min_x = 10000
+min_y = 10000
+for a in np.arange(-15, 15, 1):
+    for b in np.arange(-15, 15, 1):
+        params = [a, b]
+        sol = odeint(solver, X0, t, args=(params,))
 
-t = [stoptime * float(i) / (numpoints - 1) for i in range(numpoints)]
+        x = sol[:, 0][-1]
+        y = sol[:, 2][-1]
 
-a = -1000
-b = -10
-p = [a, b]
-
-# Call the ODE solver.
-wsol = odeint(vectorfield, w0, t, args=(p,),
-              atol=abserr, rtol=relerr)
-
-with open('two_springs.dat', 'w') as f:
-    for t1, w1 in zip(t, wsol):
-        print >> f, t1, w1[0], w1[1], w1[2], w1[3]
-
-t, x, u, y, v = loadtxt('two_springs.dat', unpack=True)
-print x[-1]
-print y[-1]
-
-# figure(1, figsize=(6, 4.5))
-
-# xlabel('t')
-# grid(True)
-# hold(True)
-# lw = 1
-
-# plot(t, x, 'b', linewidth=lw)
-# plot(t, y, 'g', linewidth=lw)
-
-# legend((r'$x_1$', r'$x_2$'), prop=FontProperties(size=16))
-# # title('Mass Displacements for the\nCoupled Spring-Mass System')
-# show(figure)
+        if abs(x) < min_x and abs(y) < min_y:
+            min_x = abs(x)
+            min_y = abs(y)
+            print "min x set to be: " + str(x) + " when a and b are: " + str(a) + ", " + str(b)
+            print "min y set to be: " + str(y) + " when a and b are: " + str(a) + ", " + str(b)
